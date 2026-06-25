@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Token Tracker — Student Portal</title>
+<style>
+  :root {
+    --primary: #5B5EA6;
+    --primary-light: #7B7FCA;
+    --accent: #E8833A;
+    --green: #4CAF50;
+    --red: #E53935;
+    --bg: #F5F6FA;
+    --card: #FFFFFF;
+    --text: #2D2D3A;
+    --text-light: #6B6B80;
+    --border: #E0E0E8;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+  header {
+    background: var(--primary);
+    color: white;
+    padding: 1.2rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 12px rgba(91,94,166,0.3);
+  }
+  header h1 { font-size: 1.4rem; font-weight: 700; }
+  header .subtitle { font-size: 0.85rem; opacity: 0.8; }
+
+  .container { max-width: 700px; margin: 0 auto; padding: 1.5rem; }
+
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 1.15rem; margin-bottom: 1rem; color: var(--primary); }
+
+  label { display: block; font-weight: 600; margin-bottom: 0.3rem; font-size: 0.9rem; }
+  input, select, textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-light); }
+
+  .btn {
+    padding: 0.6rem 1.4rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-light); }
+  .btn-accent { background: var(--accent); color: white; }
+  .btn-accent:hover { opacity: 0.9; }
+  .btn-green { background: var(--green); color: white; }
+  .btn-green:hover { opacity: 0.9; }
+  .btn-red { background: var(--red); color: white; }
+  .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+  .btn-outline:hover { background: var(--primary); color: white; }
+
+  .token-badge {
+    display: inline-flex;
+    align-items: center;
+    background: #EDE7F6;
+    color: var(--primary);
+    padding: 0.25rem 0.7rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .token-badge.low { background: #FFEBEE; color: var(--red); }
+
+  .welcome-card {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+  }
+  .welcome-card .student-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.3rem;
+  }
+  .welcome-card .student-id {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 1.2rem;
+  }
+  .balance-display {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 0.2rem;
+  }
+  .balance-display.low { color: var(--red); }
+  .balance-label {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+  }
+  .extra-earned {
+    font-size: 0.85rem;
+    color: var(--text-light);
+  }
+
+  .tabs {
+    display: flex;
+    background: var(--card);
+    border-bottom: 2px solid var(--border);
+    padding: 0 1rem;
+  }
+  .tab {
+    padding: 0.9rem 1.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-light);
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+  }
+  .tab:hover { color: var(--primary); }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .redemption-menu { display: grid; gap: 0.8rem; }
+  .redemption-option {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .redemption-option:hover { border-color: var(--primary-light); background: #F8F7FF; }
+  .redemption-option.selected { border-color: var(--primary); background: #F0EEFF; }
+  .redemption-option h3 { font-size: 0.95rem; margin-bottom: 0.2rem; }
+  .redemption-option .cost { font-size: 0.82rem; color: var(--accent); font-weight: 600; }
+  .redemption-option .desc { font-size: 0.82rem; color: var(--text-light); }
+
+  .modal-actions { display: flex; justify-content: flex-end; margin-top: 1.2rem; gap: 0.5rem; }
+
+  .log-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-date { color: var(--text-light); font-size: 0.8rem; }
+  .log-cost { font-weight: 700; }
+  .log-cost.debit { color: var(--red); }
+  .log-cost.credit { color: var(--green); }
+
+  .empty-state { text-align: center; padding: 2rem; color: var(--text-light); }
+
+  .login-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 80px);
+    padding: 2rem;
+  }
+  .login-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow);
+    text-align: center;
+  }
+  .login-card h2 {
+    color: var(--primary);
+    margin-bottom: 0.5rem;
+    font-size: 1.3rem;
+  }
+  .login-card p {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  .login-card input {
+    text-align: center;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    padding: 0.8rem;
+  }
+  .login-error {
+    color: var(--red);
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+    display: none;
+  }
+
+  #app { display: none; }
+
+  @media (max-width: 600px) {
+    .tabs { overflow-x: auto; }
+    .tab { padding: 0.8rem 1rem; white-space: nowrap; font-size: 0.85rem; }
+    .container { padding: 1rem; }
+    header { flex-direction: column; gap: 0.5rem; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Token Tracker</h1>
+    <div class="subtitle">Student Portal</div>
+  </div>
+  <div id="logoutWrap" style="display:none">
+    <button class="btn btn-outline" style="border-color:white;color:white;padding:0.35rem 1rem;font-size:0.82rem" onclick="logout()">Log Out</button>
+  </div>
+</header>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <h2>Welcome</h2>
+    <p>Enter your Student ID to view your tokens</p>
+    <div id="loginError" class="login-error">Student ID not found. Please try again.</div>
+    <input id="loginId" placeholder="e.g. S001" onkeydown="if(event.key==='Enter') attemptLogin()">
+    <button class="btn btn-primary" style="width:100%" onclick="attemptLogin()">Log In</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="container">
+    <!-- Welcome / Balance -->
+    <div class="card welcome-card" id="welcomeCard"></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-panel="s-redeem">Redeem Tokens</div>
+    <div class="tab" data-panel="s-extracredit">Submit Extra Credit</div>
+    <div class="tab" data-panel="s-history">My History</div>
+  </div>
+
+  <div class="container">
+
+    <!-- REDEEM -->
+    <div class="panel active" id="panel-s-redeem">
+      <div class="card">
+        <h2>Redeem Tokens</h2>
+        <label style="margin-top:0.5rem">Choose Redemption Option</label>
+        <div class="redemption-menu" id="sRedemptionMenu"></div>
+
+        <div id="sRedeemDetails" style="margin-top:1rem;display:none">
+          <div id="sNotesRequired" style="display:none">
+            <label style="color:var(--red)" id="sNotesLabel">Details (required)</label>
+            <input id="sRedeemNotes" placeholder="e.g. Quiz 3, Assignment 2">
+          </div>
+          <div id="sNotesOptional" style="display:none">
+            <label>Details / Notes</label>
+            <input id="sRedeemNotesOpt" placeholder="e.g. Quiz 3, Assignment 2">
+          </div>
+          <div id="sOtherReasonWrap" style="display:none">
+            <label style="color:var(--red)">Reason (required for "Other")</label>
+            <textarea id="sOtherReason" rows="2" placeholder="Explain what this token is being used for..."></textarea>
+          </div>
+          <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:0.5rem">Your request will be sent to your instructor for approval.</p>
+          <div class="modal-actions">
+            <button class="btn btn-primary" onclick="studentRedeem()">Submit Request</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:1rem">
+          <h2>My Redemption Requests</h2>
+          <div id="sRedemptionRequests"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXTRA CREDIT -->
+    <div class="panel" id="panel-s-extracredit">
+      <div class="card">
+        <h2>Submit Extra Credit</h2>
+        <p style="font-size:0.88rem;color:var(--text-light);margin-bottom:1rem">Submit your extra credit work here. Your instructor will review it and award tokens.</p>
+        <label>Assignment Title</label>
+        <input id="sEcTitle" placeholder="e.g. Extra Credit - Chapter 5 Summary">
+        <label>Submission Notes <span style="font-weight:normal;color:var(--text-light)">(200–250 words required)</span></label>
+        <textarea id="sEcNotes" rows="8" placeholder="Describe the event and what you learned..." oninput="updateWordCount()"></textarea>
+        <div id="ecWordCount" style="font-size:0.82rem;margin-top:-0.5rem;margin-bottom:0.8rem;color:var(--text-light)">0 / 200–250 words</div>
+        <button class="btn btn-accent" onclick="studentSubmitEC()">Submit Extra Credit</button>
+      </div>
+      <div class="card">
+        <h2>My Submissions</h2>
+        <div id="sSubmissions"></div>
+      </div>
+    </div>
+
+    <!-- HISTORY -->
+    <div class="panel" id="panel-s-history">
+      <div class="card">
+        <h2>My Token History</h2>
+        <div id="sHistory"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const REDEMPTION_OPTIONS = [
+  { id: 'quiz_pass', name: 'Change Quiz Score: Not Pass → Pass', cost: 1, desc: 'Convert a failing quiz grade to a passing grade' },
+  { id: 'extension', name: '3-Day Extension (Before Deadline)', cost: 1, desc: 'Request a 3-day extension on an assignment before the original deadline' },
+  { id: 'resubmission', name: 'Assignment Resubmission', cost: 1, desc: 'Resubmit an assignment for regrading' },
+  { id: 'excuse_absence', name: 'Excuse an Absence', cost: 1, desc: 'Excuse one unexcused absence from the attendance record' },
+  { id: 'other', name: 'Other', cost: 1, desc: 'Use a token for another purpose (reason required)' },
+];
+
+const STARTING_TOKENS = 2;
+const MAX_EXTRA_TOKENS = 2;
+
+let state = loadState();
+let loggedInKey = null;
+
+function loadState() {
+  const saved = localStorage.getItem('oopsTokenState');
+  return saved ? JSON.parse(saved) : { students: {}, transactions: [], submissions: [], nextId: 1 };
+}
+
+function save() {
+  localStorage.setItem('oopsTokenState', JSON.stringify(state));
+}
+
+function getBalance(studentKey) {
+  const s = state.students[studentKey];
+  if (!s) return 0;
+  let bal = STARTING_TOKENS;
+  state.transactions.filter(t => t.student === studentKey).forEach(t => {
+    bal += t.amount;
+  });
+  return Math.round(bal * 100) / 100;
+}
+
+function getExtraEarned(studentKey) {
+  return state.transactions
+    .filter(t => t.student === studentKey && t.type === 'extra_credit')
+    .reduce((sum, t) => sum + t.amount, 0);
+}
+
+// LOGIN
+function attemptLogin() {
+  const id = document.getElementById('loginId').value.trim().toUpperCase();
+  if (!id) return;
+
+  state = loadState();
+
+  const match = Object.entries(state.students).find(([k, s]) => s.studentId.toUpperCase() === id);
+  if (!match) {
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+
+  loggedInKey = match[0];
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('logoutWrap').style.display = 'block';
+  renderStudentView();
+}
+
+function logout() {
+  loggedInKey = null;
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('logoutWrap').style.display = 'none';
+  document.getElementById('loginId').value = '';
+}
+
+// TABS
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+    renderStudentView();
+  });
+});
+
+function renderStudentView() {
+  if (!loggedInKey) return;
+  state = loadState();
+  renderWelcome();
+  renderStudentRedeem();
+  renderStudentRedemptionRequests();
+  renderStudentSubmissions();
+  renderStudentHistory();
+}
+
+function renderWelcome() {
+  const s = state.students[loggedInKey];
+  if (!s) return logout();
+  const bal = getBalance(loggedInKey);
+  const extra = getExtraEarned(loggedInKey);
+  const low = bal <= 0.5 ? ' low' : '';
+  document.getElementById('welcomeCard').innerHTML = `
+    <div class="student-name">${s.name}</div>
+    <div class="student-id">ID: ${s.studentId}</div>
+    <div class="balance-display${low}">${bal}</div>
+    <div class="balance-label">tokens remaining</div>
+    <div class="extra-earned">Extra credit earned: ${extra} / ${MAX_EXTRA_TOKENS}</div>
+  `;
+}
+
+// REDEEM
+let sSelectedRedemption = null;
+
+function renderStudentRedeem() {
+  document.getElementById('sRedemptionMenu').innerHTML = REDEMPTION_OPTIONS.map(opt =>
+    `<div class="redemption-option" data-id="${opt.id}" onclick="sSelectRedemption('${opt.id}')">
+      <h3>${opt.name}</h3>
+      <div class="cost">Cost: ${opt.cost} token${opt.cost!==1?'s':''}</div>
+      <div class="desc">${opt.desc}</div>
+    </div>`
+  ).join('');
+  sSelectedRedemption = null;
+  document.getElementById('sRedeemDetails').style.display = 'none';
+}
+
+const NOTES_REQUIRED_IDS = ['quiz_pass', 'extension', 'resubmission'];
+
+function sSelectRedemption(id) {
+  sSelectedRedemption = REDEMPTION_OPTIONS.find(o => o.id === id);
+  document.querySelectorAll('#panel-s-redeem .redemption-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === id);
+  });
+  document.getElementById('sRedeemDetails').style.display = 'block';
+  document.getElementById('sOtherReasonWrap').style.display = id === 'other' ? 'block' : 'none';
+
+  const required = NOTES_REQUIRED_IDS.includes(id);
+  document.getElementById('sNotesRequired').style.display = required ? 'block' : 'none';
+  document.getElementById('sNotesOptional').style.display = (!required && id !== 'other') ? 'block' : 'none';
+
+  const placeholders = {
+    quiz_pass: 'Which quiz? e.g. Quiz 3',
+    extension: 'Which assignment? e.g. Assignment 2',
+    resubmission: 'Which assignment? e.g. Assignment 4',
+  };
+  if (required) {
+    document.getElementById('sRedeemNotes').placeholder = placeholders[id] || '';
+    document.getElementById('sNotesLabel').textContent =
+      id === 'quiz_pass' ? 'Which quiz? (required)' :
+      id === 'extension' ? 'Which assignment? (required)' :
+      'Which assignment? (required)';
+  }
+}
+
+function studentRedeem() {
+  if (!sSelectedRedemption) return alert('Please select a redemption option.');
+  state = loadState();
+
+  const bal = getBalance(loggedInKey);
+  if (bal < sSelectedRedemption.cost) {
+    return alert(`You only have ${bal} tokens but need ${sSelectedRedemption.cost}.`);
+  }
+
+  const notesRequired = NOTES_REQUIRED_IDS.includes(sSelectedRedemption.id);
+  const notes = notesRequired
+    ? document.getElementById('sRedeemNotes').value.trim()
+    : document.getElementById('sRedeemNotesOpt').value.trim();
+
+  if (notesRequired && !notes) {
+    return alert('Please fill in the required details before submitting.');
+  }
+
+  if (sSelectedRedemption.id === 'other') {
+    const reason = document.getElementById('sOtherReason').value.trim();
+    if (!reason) return alert('Please provide a reason for the "Other" redemption.');
+  }
+
+  const otherReason = sSelectedRedemption.id === 'other' ? document.getElementById('sOtherReason').value.trim() : '';
+  const desc = sSelectedRedemption.id === 'other'
+    ? `Other — ${otherReason}` + (notes ? ` (${notes})` : '')
+    : sSelectedRedemption.name + (notes ? ` — ${notes}` : '');
+
+  if (!state.redemptionRequests) state.redemptionRequests = [];
+  state.redemptionRequests.push({
+    student: loggedInKey,
+    optionId: sSelectedRedemption.id,
+    optionName: sSelectedRedemption.name,
+    cost: sSelectedRedemption.cost,
+    description: desc,
+    notes: notes,
+    date: new Date().toISOString(),
+    status: 'pending'
+  });
+  save();
+  document.getElementById('sRedeemNotes').value = '';
+  document.getElementById('sRedeemNotesOpt').value = '';
+  document.getElementById('sOtherReason').value = '';
+  renderStudentView();
+  alert('Your redemption request has been submitted for instructor approval.');
+}
+
+// REDEMPTION REQUESTS
+function renderStudentRedemptionRequests() {
+  const reqs = (state.redemptionRequests || []).filter(r => r.student === loggedInKey);
+  const el = document.getElementById('sRedemptionRequests');
+  if (reqs.length === 0) {
+    el.innerHTML = '<div class="empty-state">No redemption requests yet.</div>';
+    return;
+  }
+  const statusColors = { pending: 'var(--accent)', approved: 'var(--green)', rejected: 'var(--red)' };
+  const statusLabels = { pending: 'Pending Approval', approved: 'Approved', rejected: 'Denied' };
+  el.innerHTML = [...reqs].reverse().map(r => {
+    return `<div class="log-entry">
+      <div>
+        <strong>${r.optionName}</strong>${r.notes ? ` — ${r.notes}` : ''}
+        <br><span class="log-date">${new Date(r.date).toLocaleString()}</span>
+      </div>
+      <div style="font-weight:700;font-size:0.85rem;color:${statusColors[r.status]}">${statusLabels[r.status]}</div>
+    </div>`;
+  }).join('');
+}
+
+// EXTRA CREDIT SUBMISSIONS
+function getWordCount(text) {
+  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+}
+
+function updateWordCount() {
+  const count = getWordCount(document.getElementById('sEcNotes').value);
+  const el = document.getElementById('ecWordCount');
+  if (count < 200) {
+    el.style.color = 'var(--red)';
+    el.textContent = `${count} / 200–250 words (${200 - count} more needed)`;
+  } else if (count > 250) {
+    el.style.color = 'var(--red)';
+    el.textContent = `${count} / 200–250 words (${count - 250} over limit)`;
+  } else {
+    el.style.color = 'var(--green)';
+    el.textContent = `${count} / 200–250 words`;
+  }
+}
+
+function studentSubmitEC() {
+  const title = document.getElementById('sEcTitle').value.trim();
+  if (!title) return alert('Please enter an assignment title.');
+  const notes = document.getElementById('sEcNotes').value.trim();
+  const wc = getWordCount(notes);
+  if (wc < 200) return alert(`Your submission notes must be at least 200 words. Currently: ${wc} words.`);
+  if (wc > 250) return alert(`Your submission notes must be at most 250 words. Currently: ${wc} words.`);
+
+  state = loadState();
+  if (!state.submissions) state.submissions = [];
+  state.submissions.push({
+    student: loggedInKey, title, notes,
+    date: new Date().toISOString(), status: 'pending'
+  });
+  save();
+  document.getElementById('sEcTitle').value = '';
+  document.getElementById('sEcNotes').value = '';
+  renderStudentView();
+  alert('Extra credit submitted! Your instructor will review it.');
+}
+
+function renderStudentSubmissions() {
+  const subs = (state.submissions || []).filter(s => s.student === loggedInKey);
+  if (subs.length === 0) {
+    document.getElementById('sSubmissions').innerHTML = '<div class="empty-state">No submissions yet.</div>';
+    return;
+  }
+  document.getElementById('sSubmissions').innerHTML = [...subs].reverse().map(sub => {
+    const statusColors = { pending: 'var(--accent)', approved: 'var(--green)', rejected: 'var(--red)' };
+    const statusLabels = { pending: 'Pending Review', approved: 'Approved', rejected: 'Dismissed' };
+    return `<div class="log-entry">
+      <div>
+        <strong>${sub.title}</strong>
+        ${sub.notes ? `<br><span style="color:var(--text-light);font-size:0.82rem">${sub.notes}</span>` : ''}
+        <br><span class="log-date">${new Date(sub.date).toLocaleString()}</span>
+      </div>
+      <div style="font-weight:700;font-size:0.85rem;color:${statusColors[sub.status] || 'var(--text-light)'}">${statusLabels[sub.status] || sub.status}</div>
+    </div>`;
+  }).join('');
+}
+
+// HISTORY
+function renderStudentHistory() {
+  const txns = state.transactions.filter(t => t.student === loggedInKey).reverse();
+  if (txns.length === 0) {
+    document.getElementById('sHistory').innerHTML = '<div class="empty-state">No token activity yet.</div>';
+    return;
+  }
+  document.getElementById('sHistory').innerHTML = txns.map(t => {
+    const cls = t.amount < 0 ? 'debit' : 'credit';
+    const sign = t.amount > 0 ? '+' : '';
+    const typeBadge = t.type === 'redemption' ? 'Redemption' : t.type === 'extra_credit' ? 'Extra Credit' : 'Adjustment';
+    return `<div class="log-entry">
+      <div>${t.description}<br>
+        <span class="log-date">${typeBadge} &bull; ${new Date(t.date).toLocaleString()}</span>
+      </div>
+      <div class="log-cost ${cls}">${sign}${t.amount} token${Math.abs(t.amount)!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>

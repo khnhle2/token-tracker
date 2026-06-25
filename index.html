@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Token Tracker</title>
+<style>
+  :root {
+    --primary: #5B5EA6;
+    --primary-light: #7B7FCA;
+    --accent: #E8833A;
+    --green: #4CAF50;
+    --red: #E53935;
+    --bg: #F5F6FA;
+    --card: #FFFFFF;
+    --text: #2D2D3A;
+    --text-light: #6B6B80;
+    --border: #E0E0E8;
+    --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); }
+
+  header {
+    background: var(--primary);
+    color: white;
+    padding: 1.2rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 12px rgba(91,94,166,0.3);
+  }
+  header h1 { font-size: 1.4rem; font-weight: 700; }
+  header .subtitle { font-size: 0.85rem; opacity: 0.8; }
+
+  .header-actions { display: flex; align-items: center; gap: 0.8rem; }
+
+  .tabs {
+    display: flex;
+    background: var(--card);
+    border-bottom: 2px solid var(--border);
+    padding: 0 1rem;
+  }
+  .tab {
+    padding: 0.9rem 1.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-light);
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+  }
+  .tab:hover { color: var(--primary); }
+  .tab.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+
+  .container { max-width: 960px; margin: 0 auto; padding: 1.5rem; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 1.15rem; margin-bottom: 1rem; color: var(--primary); }
+
+  label { display: block; font-weight: 600; margin-bottom: 0.3rem; font-size: 0.9rem; }
+  input, select, textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+    font-family: inherit;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary-light); }
+
+  .btn {
+    padding: 0.6rem 1.4rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-light); }
+  .btn-accent { background: var(--accent); color: white; }
+  .btn-accent:hover { opacity: 0.9; }
+  .btn-green { background: var(--green); color: white; }
+  .btn-green:hover { opacity: 0.9; }
+  .btn-red { background: var(--red); color: white; }
+  .btn-red:hover { opacity: 0.9; }
+  .btn-sm { padding: 0.35rem 0.8rem; font-size: 0.82rem; }
+  .btn + .btn { margin-left: 0.5rem; }
+
+  .form-row { display: flex; gap: 1rem; }
+  .form-row > div { flex: 1; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { text-align: left; padding: 0.7rem; background: var(--bg); color: var(--text-light); font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 0.7rem; border-bottom: 1px solid var(--border); }
+  tr:hover td { background: #F8F8FC; }
+
+  .token-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #EDE7F6;
+    color: var(--primary);
+    padding: 0.25rem 0.7rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .token-badge.low { background: #FFEBEE; color: var(--red); }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 1.2rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-card .num { font-size: 2rem; font-weight: 700; color: var(--primary); }
+  .stat-card .label { font-size: 0.8rem; color: var(--text-light); margin-top: 0.2rem; }
+
+  .log-entry {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-date { color: var(--text-light); font-size: 0.8rem; }
+  .log-cost { font-weight: 700; }
+  .log-cost.debit { color: var(--red); }
+  .log-cost.credit { color: var(--green); }
+
+  .empty-state { text-align: center; padding: 2rem; color: var(--text-light); }
+
+  .search-bar {
+    display: flex;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+  .search-bar input { margin-bottom: 0; }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 480px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  }
+  .modal h2 { margin-bottom: 1.2rem; }
+  .modal-actions { display: flex; justify-content: flex-end; margin-top: 1.2rem; gap: 0.5rem; }
+
+  .redemption-menu { display: grid; gap: 0.8rem; }
+  .redemption-option {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .redemption-option:hover { border-color: var(--primary-light); background: #F8F7FF; }
+  .redemption-option.selected { border-color: var(--primary); background: #F0EEFF; }
+  .redemption-option h3 { font-size: 0.95rem; margin-bottom: 0.2rem; }
+  .redemption-option .cost { font-size: 0.82rem; color: var(--accent); font-weight: 600; }
+  .redemption-option .desc { font-size: 0.82rem; color: var(--text-light); }
+
+  .att-table { border-collapse: collapse; font-size: 0.82rem; width: 100%; }
+  .att-table th, .att-table td { padding: 0.4rem 0.5rem; text-align: center; border: 1px solid var(--border); white-space: nowrap; }
+  .att-table th { background: var(--bg); color: var(--text-light); font-size: 0.72rem; text-transform: uppercase; position: sticky; top: 0; }
+  .att-table th.name-col { text-align: left; min-width: 120px; position: sticky; left: 0; z-index: 2; }
+  .att-table td.name-col { text-align: left; font-weight: 600; position: sticky; left: 0; background: var(--card); z-index: 1; }
+  .att-table td.att-cell { cursor: pointer; min-width: 36px; user-select: none; }
+  .att-table td.att-cell:hover { background: #F0EEFF; }
+  .att-P { background: #E8F5E9; color: #2E7D32; font-weight: 700; }
+  .att-A { background: #FFEBEE; color: #C62828; font-weight: 700; }
+  .att-L { background: #FFF8E1; color: #F57F17; font-weight: 700; }
+  .att-E { background: #E3F2FD; color: #1565C0; font-weight: 700; }
+  .att-holiday { background: #F3E5F5; color: #7B1FA2; font-size: 0.7rem; cursor: default !important; }
+
+  .tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--red);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
+    margin-left: 0.3rem;
+    padding: 0 4px;
+  }
+
+  @media (max-width: 600px) {
+    .form-row { flex-direction: column; gap: 0; }
+    .tabs { overflow-x: auto; }
+    .tab { padding: 0.8rem 1rem; white-space: nowrap; font-size: 0.85rem; }
+    .container { padding: 1rem; }
+    header { flex-direction: column; gap: 0.8rem; }
+    .header-actions { flex-wrap: wrap; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Token Tracker</h1>
+    <div class="subtitle">Student Token Management System</div>
+  </div>
+  <div class="header-actions">
+    <a href="student.html" class="btn btn-sm" style="background:#81D4FA;color:#0D47A1;text-decoration:none">Student Portal</a>
+    <button class="btn btn-accent btn-sm" onclick="exportData()" title="Export data as JSON">Export</button>
+    <button class="btn btn-sm" style="background:white;color:var(--primary)" onclick="document.getElementById('importFile').click()" title="Import data from JSON">Import</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</header>
+
+<div class="tabs" id="tabBar">
+  <div class="tab active" data-panel="dashboard">Dashboard</div>
+  <div class="tab" data-panel="students">Students</div>
+  <div class="tab" data-panel="redeem">Redeem Tokens</div>
+  <div class="tab" data-panel="extracredit">Extra Credit</div>
+  <div class="tab" data-panel="attendance">Attendance</div>
+  <div class="tab" data-panel="history">History</div>
+</div>
+
+<div class="container">
+
+  <!-- DASHBOARD -->
+  <div class="panel active" id="panel-dashboard">
+    <div class="stats-row" id="stats-row"></div>
+    <div class="card">
+      <h2>Recent Activity</h2>
+      <div id="recent-activity"></div>
+    </div>
+  </div>
+
+  <!-- STUDENTS -->
+  <div class="panel" id="panel-students">
+    <div class="card">
+      <h2>Add Student</h2>
+      <label>LastName, FirstName ID</label>
+      <input id="newStudentEntry" placeholder="e.g. Doe, Jane STU001">
+      <button class="btn btn-primary" onclick="addStudent()">Add Student</button>
+      <button class="btn btn-green" onclick="showBulkAdd()" style="margin-left:0.5rem">Bulk Add</button>
+    </div>
+    <div class="card" id="bulkAddCard" style="display:none">
+      <h2>Bulk Add Students</h2>
+      <label>One student per line: LastName, FirstName ID</label>
+      <textarea id="bulkNames" rows="6" placeholder="Doe, Jane STU001&#10;Smith, John STU002&#10;..."></textarea>
+      <button class="btn btn-primary" onclick="bulkAddStudents()">Add All</button>
+    </div>
+    <div class="card">
+      <h2>Student Roster</h2>
+      <div class="search-bar">
+        <input id="studentSearch" placeholder="Search students..." oninput="renderStudents()">
+      </div>
+      <div id="student-table"></div>
+    </div>
+  </div>
+
+  <!-- REDEEM -->
+  <div class="panel" id="panel-redeem">
+    <div class="card">
+      <h2>Redeem Tokens</h2>
+      <label>Select Student</label>
+      <select id="redeemStudent"></select>
+
+      <label style="margin-top:0.5rem">Choose Redemption Option</label>
+      <div class="redemption-menu" id="redemptionMenu"></div>
+
+      <div id="redeemDetails" style="margin-top:1rem;display:none">
+        <label>Details / Notes</label>
+        <input id="redeemNotes" placeholder="e.g. Quiz 3, Assignment 2">
+        <div id="otherReasonWrap" style="display:none">
+          <label style="color:var(--red)">Reason (required for "Other")</label>
+          <textarea id="otherReason" rows="2" placeholder="Explain what this token is being used for..."></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="confirmRedeem()">Confirm Redemption</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Pending Redemption Requests</h2>
+      <p style="font-size:0.88rem;color:var(--text-light);margin-bottom:1rem">Student redemption requests from the Student Portal appear here for your approval.</p>
+      <div id="redemption-requests"></div>
+    </div>
+  </div>
+
+  <!-- EXTRA CREDIT -->
+  <div class="panel" id="panel-extracredit">
+    <div class="card">
+      <h2>Award Extra Credit Tokens</h2>
+      <p style="font-size:0.88rem;color:var(--text-light);margin-bottom:1rem">Each extra credit session earns 0.5 tokens. Students can earn up to 2 extra tokens (4 sessions max).</p>
+      <label>Select Student</label>
+      <select id="ecStudent"></select>
+      <div class="form-row">
+        <div>
+          <label>Sessions Completed</label>
+          <select id="ecSessions">
+            <option value="1">1 session (+0.5 tokens)</option>
+            <option value="2">2 sessions (+1.0 tokens)</option>
+            <option value="3">3 sessions (+1.5 tokens)</option>
+            <option value="4">4 sessions (+2.0 tokens)</option>
+          </select>
+        </div>
+      </div>
+      <label>Assignment / Description</label>
+      <input id="ecDescription" placeholder="e.g. Extra Credit Assignment 1">
+      <button class="btn btn-green" onclick="awardExtraCredit()">Award Tokens</button>
+    </div>
+
+    <div class="card">
+      <h2>Pending Student Submissions</h2>
+      <p style="font-size:0.88rem;color:var(--text-light);margin-bottom:1rem">Submissions from the Student Portal appear here for your review.</p>
+      <div id="ec-submissions"></div>
+    </div>
+  </div>
+
+  <!-- ATTENDANCE -->
+  <div class="panel" id="panel-attendance">
+    <div class="card">
+      <h2>Attendance</h2>
+      <p style="font-size:0.88rem;color:var(--text-light);margin-bottom:1rem">Mon/Wed class — Fall 2026 (Aug 31 – Dec 14). Click a cell to cycle: Present → Absent → Late → Excused → clear.</p>
+      <div class="form-row" style="margin-bottom:1rem">
+        <div>
+          <label>Jump to Date</label>
+          <select id="attendanceMonth" onchange="renderAttendance()">
+            <option value="">All Dates</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:0.8rem">
+          <button class="btn btn-primary btn-sm" onclick="markAllPresent()">Mark All Present Today</button>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <div id="attendance-table"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Attendance Summary</h2>
+      <div id="attendance-summary"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="panel" id="panel-history">
+    <div class="card">
+      <h2>Full Transaction History</h2>
+      <div class="form-row" style="margin-bottom:1rem">
+        <div>
+          <label>Filter by Student</label>
+          <select id="historyFilter" onchange="renderHistory()">
+            <option value="">All Students</option>
+          </select>
+        </div>
+        <div>
+          <label>Filter by Type</label>
+          <select id="historyTypeFilter" onchange="renderHistory()">
+            <option value="">All Types</option>
+            <option value="redemption">Redemptions</option>
+            <option value="extra_credit">Extra Credit Awards</option>
+            <option value="manual">Manual Adjustments</option>
+          </select>
+        </div>
+      </div>
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Confirm delete modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h2>Remove Student</h2>
+    <p>Are you sure you want to remove <strong id="deleteStudentName"></strong>? This will delete all their token history.</p>
+    <div class="modal-actions">
+      <button class="btn" style="background:var(--border)" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-red" onclick="confirmDelete()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<!-- Adjust tokens modal -->
+<div class="modal-overlay" id="adjustModal">
+  <div class="modal">
+    <h2>Adjust Tokens</h2>
+    <p style="margin-bottom:0.3rem">Student: <strong id="adjustStudentName"></strong></p>
+    <p style="margin-bottom:1rem;color:var(--text-light)">Current balance: <strong id="adjustStudentBalance"></strong></p>
+    <label>Amount (positive to add, negative to subtract)</label>
+    <input type="number" id="adjustAmount" step="0.5" placeholder="e.g. 1 or -0.5">
+    <label>Reason</label>
+    <input id="adjustReason" placeholder="e.g. Correction, bonus, etc.">
+    <div class="modal-actions">
+      <button class="btn" style="background:var(--border)" onclick="closeModal('adjustModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmAdjust()">Apply Adjustment</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const REDEMPTION_OPTIONS = [
+  { id: 'quiz_pass', name: 'Change Quiz Score: Not Pass → Pass', cost: 1, desc: 'Convert a failing quiz grade to a passing grade' },
+  { id: 'extension', name: '3-Day Extension (Before Deadline)', cost: 1, desc: 'Request a 3-day extension on an assignment before the original deadline' },
+  { id: 'resubmission', name: 'Assignment Resubmission', cost: 1, desc: 'Resubmit an assignment for regrading' },
+  { id: 'excuse_absence', name: 'Excuse an Absence', cost: 1, desc: 'Excuse one unexcused absence from the attendance record' },
+  { id: 'other', name: 'Other', cost: 1, desc: 'Use a token for another purpose (reason required)' },
+];
+
+const STARTING_TOKENS = 2;
+const MAX_EXTRA_TOKENS = 2;
+const TOKENS_PER_SESSION = 0.5;
+
+let state = loadState();
+
+function loadState() {
+  const saved = localStorage.getItem('oopsTokenState');
+  return saved ? JSON.parse(saved) : { students: {}, transactions: [], submissions: [], nextId: 1 };
+}
+
+function save() {
+  localStorage.setItem('oopsTokenState', JSON.stringify(state));
+}
+
+function getBalance(studentKey) {
+  const s = state.students[studentKey];
+  if (!s) return 0;
+  let bal = STARTING_TOKENS;
+  state.transactions.filter(t => t.student === studentKey).forEach(t => {
+    bal += t.amount;
+  });
+  return Math.round(bal * 100) / 100;
+}
+
+function getExtraEarned(studentKey) {
+  return state.transactions
+    .filter(t => t.student === studentKey && t.type === 'extra_credit')
+    .reduce((sum, t) => sum + t.amount, 0);
+}
+
+// TABS
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+    refreshAll();
+  });
+});
+
+function refreshAll() {
+  renderDashboard();
+  renderStudents();
+  renderRedeemForm();
+  renderRedemptionRequests();
+  renderECForm();
+  renderSubmissions();
+  renderAttendance();
+  renderHistory();
+  updateBadges();
+}
+
+// DASHBOARD
+function renderDashboard() {
+  const keys = Object.keys(state.students);
+  const totalStudents = keys.length;
+  const totalRedemptions = state.transactions.filter(t => t.type === 'redemption').length;
+  const totalEC = state.transactions.filter(t => t.type === 'extra_credit').length;
+  const avgBalance = totalStudents ? (keys.reduce((s, k) => s + getBalance(k), 0) / totalStudents).toFixed(1) : '0';
+
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="num">${totalStudents}</div><div class="label">Students</div></div>
+    <div class="stat-card"><div class="num">${avgBalance}</div><div class="label">Avg Token Balance</div></div>
+    <div class="stat-card"><div class="num">${totalRedemptions}</div><div class="label">Tokens Redeemed</div></div>
+    <div class="stat-card"><div class="num">${totalEC}</div><div class="label">Extra Credits Awarded</div></div>
+  `;
+
+  const recent = [...state.transactions].reverse().slice(0, 8);
+  if (recent.length === 0) {
+    document.getElementById('recent-activity').innerHTML = '<div class="empty-state">No activity yet. Add students and start tracking!</div>';
+    return;
+  }
+  document.getElementById('recent-activity').innerHTML = recent.map(t => {
+    const s = state.students[t.student];
+    const name = s ? s.name : t.student;
+    const cls = t.amount < 0 ? 'debit' : 'credit';
+    const sign = t.amount > 0 ? '+' : '';
+    return `<div class="log-entry">
+      <div><strong>${name}</strong> — ${t.description}<br><span class="log-date">${new Date(t.date).toLocaleString()}</span></div>
+      <div class="log-cost ${cls}">${sign}${t.amount} token${Math.abs(t.amount)!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+
+// STUDENTS
+function parseStudentLine(line) {
+  const commaIdx = line.indexOf(',');
+  let name, id;
+  if (commaIdx !== -1) {
+    const lastName = line.slice(0, commaIdx).trim();
+    const rest = line.slice(commaIdx + 1).trim().split(/\s+/);
+    if (rest.length > 1) {
+      id = rest.pop();
+      name = rest.join(' ') + ' ' + lastName;
+    } else {
+      name = rest[0] + ' ' + lastName;
+      id = 'S' + String(state.nextId).padStart(3,'0');
+    }
+  } else {
+    name = line;
+    id = 'S' + String(state.nextId).padStart(3,'0');
+  }
+  return { name, id };
+}
+
+function addStudent() {
+  const line = document.getElementById('newStudentEntry').value.trim();
+  if (!line) return alert('Please enter a student.');
+  const { name, id } = parseStudentLine(line);
+  const key = 'stu_' + state.nextId;
+  state.students[key] = { name, studentId: id };
+  state.nextId++;
+  save();
+  document.getElementById('newStudentEntry').value = '';
+  refreshAll();
+}
+
+function showBulkAdd() {
+  const c = document.getElementById('bulkAddCard');
+  c.style.display = c.style.display === 'none' ? 'block' : 'none';
+}
+
+function bulkAddStudents() {
+  const lines = document.getElementById('bulkNames').value.split('\n').map(l => l.trim()).filter(Boolean);
+  lines.forEach(line => {
+    const { name, id } = parseStudentLine(line);
+    const key = 'stu_' + state.nextId;
+    state.students[key] = { name, studentId: id };
+    state.nextId++;
+  });
+  save();
+  document.getElementById('bulkNames').value = '';
+  document.getElementById('bulkAddCard').style.display = 'none';
+  refreshAll();
+  alert(`Added ${lines.length} students.`);
+}
+
+function renderStudents() {
+  const search = (document.getElementById('studentSearch')?.value || '').toLowerCase();
+  const keys = Object.keys(state.students).filter(k =>
+    state.students[k].name.toLowerCase().includes(search) ||
+    state.students[k].studentId.toLowerCase().includes(search)
+  );
+
+  if (keys.length === 0) {
+    document.getElementById('student-table').innerHTML = '<div class="empty-state">No students found. Add students above.</div>';
+    return;
+  }
+
+  document.getElementById('student-table').innerHTML = `
+    <div style="margin-bottom:0.5rem">
+      <button class="btn btn-sm btn-red" onclick="bulkDelete()" id="bulkDeleteBtn" style="display:none">Remove Selected</button>
+    </div>
+    <table>
+      <thead><tr><th style="width:30px"><input type="checkbox" onchange="toggleSelectAll(this)"></th><th>Name</th><th>ID</th><th>Balance</th><th>Extra Earned</th><th>Actions</th></tr></thead>
+      <tbody>${keys.map(k => {
+        const s = state.students[k];
+        const bal = getBalance(k);
+        const extra = getExtraEarned(k);
+        const low = bal <= 0.5 ? ' low' : '';
+        return `<tr>
+          <td><input type="checkbox" class="student-check" value="${k}" onchange="updateBulkDeleteBtn()"></td>
+          <td><strong>${s.name}</strong></td>
+          <td>${s.studentId}</td>
+          <td><span class="token-badge${low}">${bal} tokens</span></td>
+          <td>${extra} / 2</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="openAdjustModal('${k}')">Adjust</button>
+            <button class="btn btn-sm btn-red" onclick="promptDelete('${k}')">Remove</button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+  `;
+}
+
+let pendingDeleteKey = null;
+function promptDelete(key) {
+  pendingDeleteKey = key;
+  document.getElementById('deleteStudentName').textContent = state.students[key].name;
+  document.getElementById('deleteModal').classList.add('show');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+function confirmDelete() {
+  if (pendingDeleteKey) {
+    delete state.students[pendingDeleteKey];
+    state.transactions = state.transactions.filter(t => t.student !== pendingDeleteKey);
+    state.submissions = state.submissions.filter(s => s.student !== pendingDeleteKey);
+    save();
+    refreshAll();
+  }
+  closeModal('deleteModal');
+}
+
+function toggleSelectAll(el) {
+  document.querySelectorAll('.student-check').forEach(cb => cb.checked = el.checked);
+  updateBulkDeleteBtn();
+}
+
+function updateBulkDeleteBtn() {
+  const checked = document.querySelectorAll('.student-check:checked').length;
+  const btn = document.getElementById('bulkDeleteBtn');
+  if (btn) btn.style.display = checked > 0 ? 'inline-block' : 'none';
+  if (btn && checked > 0) btn.textContent = `Remove Selected (${checked})`;
+}
+
+function bulkDelete() {
+  const checked = [...document.querySelectorAll('.student-check:checked')].map(cb => cb.value);
+  if (checked.length === 0) return;
+  if (!confirm(`Remove ${checked.length} student${checked.length > 1 ? 's' : ''}? This will delete all their token history.`)) return;
+  checked.forEach(k => {
+    delete state.students[k];
+    state.transactions = state.transactions.filter(t => t.student !== k);
+    state.submissions = (state.submissions || []).filter(s => s.student !== k);
+  });
+  save();
+  refreshAll();
+}
+
+// ADJUST MODAL
+let pendingAdjustKey = null;
+function openAdjustModal(key) {
+  pendingAdjustKey = key;
+  const s = state.students[key];
+  document.getElementById('adjustStudentName').textContent = s.name;
+  document.getElementById('adjustStudentBalance').textContent = getBalance(key) + ' tokens';
+  document.getElementById('adjustAmount').value = '';
+  document.getElementById('adjustReason').value = '';
+  document.getElementById('adjustModal').classList.add('show');
+}
+
+function confirmAdjust() {
+  if (!pendingAdjustKey) return;
+  const num = parseFloat(document.getElementById('adjustAmount').value);
+  if (isNaN(num) || num === 0) return alert('Please enter a valid non-zero amount.');
+  const reason = document.getElementById('adjustReason').value.trim() || 'Manual adjustment';
+  state.transactions.push({
+    student: pendingAdjustKey, type: 'manual', amount: num,
+    description: reason, date: new Date().toISOString()
+  });
+  save();
+  closeModal('adjustModal');
+  refreshAll();
+}
+
+// REDEEM
+let selectedRedemption = null;
+
+function renderRedeemForm() {
+  const sel = document.getElementById('redeemStudent');
+  sel.innerHTML = '<option value="">-- Select student --</option>' +
+    Object.keys(state.students).map(k =>
+      `<option value="${k}">${state.students[k].name} (${getBalance(k)} tokens)</option>`
+    ).join('');
+
+  document.getElementById('redemptionMenu').innerHTML = REDEMPTION_OPTIONS.map(opt =>
+    `<div class="redemption-option" data-id="${opt.id}" onclick="selectRedemption('${opt.id}')">
+      <h3>${opt.name}</h3>
+      <div class="cost">Cost: ${opt.cost} token${opt.cost!==1?'s':''}</div>
+      <div class="desc">${opt.desc}</div>
+    </div>`
+  ).join('');
+
+  selectedRedemption = null;
+  document.getElementById('redeemDetails').style.display = 'none';
+}
+
+function selectRedemption(id) {
+  selectedRedemption = REDEMPTION_OPTIONS.find(o => o.id === id);
+  document.querySelectorAll('.redemption-option').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === id);
+  });
+  document.getElementById('redeemDetails').style.display = 'block';
+  document.getElementById('otherReasonWrap').style.display = id === 'other' ? 'block' : 'none';
+}
+
+function confirmRedeem() {
+  const studentKey = document.getElementById('redeemStudent').value;
+  if (!studentKey) return alert('Please select a student.');
+  if (!selectedRedemption) return alert('Please select a redemption option.');
+
+  const bal = getBalance(studentKey);
+  if (bal < selectedRedemption.cost) {
+    return alert(`${state.students[studentKey].name} only has ${bal} tokens but needs ${selectedRedemption.cost}.`);
+  }
+
+  if (selectedRedemption.id === 'other') {
+    const reason = document.getElementById('otherReason').value.trim();
+    if (!reason) return alert('Please provide a reason for the "Other" redemption.');
+  }
+
+  const notes = document.getElementById('redeemNotes').value.trim();
+  const otherReason = selectedRedemption.id === 'other' ? document.getElementById('otherReason').value.trim() : '';
+  const desc = selectedRedemption.id === 'other'
+    ? `Other — ${otherReason}` + (notes ? ` (${notes})` : '')
+    : selectedRedemption.name + (notes ? ` — ${notes}` : '');
+
+  state.transactions.push({
+    student: studentKey, type: 'redemption',
+    amount: -selectedRedemption.cost, optionId: selectedRedemption.id,
+    description: desc, date: new Date().toISOString()
+  });
+  save();
+  document.getElementById('redeemNotes').value = '';
+  document.getElementById('otherReason').value = '';
+  refreshAll();
+  alert(`Redeemed ${selectedRedemption.cost} token(s) for ${state.students[studentKey].name}.`);
+}
+
+// EXTRA CREDIT
+function renderECForm() {
+  const opts = Object.keys(state.students).map(k =>
+    `<option value="${k}">${state.students[k].name} (extra earned: ${getExtraEarned(k)}/${MAX_EXTRA_TOKENS})</option>`
+  ).join('');
+  document.getElementById('ecStudent').innerHTML = '<option value="">-- Select student --</option>' + opts;
+}
+
+function awardExtraCredit() {
+  const key = document.getElementById('ecStudent').value;
+  if (!key) return alert('Select a student.');
+  const sessions = parseInt(document.getElementById('ecSessions').value);
+  const amount = sessions * TOKENS_PER_SESSION;
+  const earned = getExtraEarned(key);
+
+  if (earned + amount > MAX_EXTRA_TOKENS) {
+    return alert(`${state.students[key].name} has already earned ${earned} extra tokens. Adding ${amount} would exceed the ${MAX_EXTRA_TOKENS} max. They can earn at most ${MAX_EXTRA_TOKENS - earned} more.`);
+  }
+
+  const desc = document.getElementById('ecDescription').value.trim() || `Extra credit (${sessions} session${sessions>1?'s':''})`;
+  state.transactions.push({
+    student: key, type: 'extra_credit', amount,
+    description: desc, date: new Date().toISOString()
+  });
+  save();
+  document.getElementById('ecDescription').value = '';
+  refreshAll();
+  alert(`Awarded ${amount} token(s) to ${state.students[key].name}.`);
+}
+
+// REDEMPTION REQUESTS
+function renderRedemptionRequests() {
+  const el = document.getElementById('redemption-requests');
+  if (!el) return;
+  const allReqs = state.redemptionRequests || [];
+  const pendingIndexes = [];
+  allReqs.forEach((r, i) => { if (r.status === 'pending') pendingIndexes.push(i); });
+  if (pendingIndexes.length === 0) {
+    el.innerHTML = '<div class="empty-state">No pending requests.</div>';
+    return;
+  }
+  el.innerHTML = pendingIndexes.map(i => {
+    const req = allReqs[i];
+    const s = state.students[req.student];
+    const name = s ? s.name : 'Unknown';
+    return `<div class="log-entry" style="flex-wrap:wrap;gap:0.5rem">
+      <div>
+        <strong>${name}</strong> — ${req.description}
+        <br><span class="log-date">${new Date(req.date).toLocaleString()} &bull; Cost: ${req.cost} token</span>
+      </div>
+      <div>
+        <button class="btn btn-sm btn-green" onclick="approveRedemption(${i})">Approve</button>
+        <button class="btn btn-sm btn-red" onclick="rejectRedemption(${i})">Deny</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function approveRedemption(idx) {
+  const req = (state.redemptionRequests || [])[idx];
+  if (!req || req.status !== 'pending') return;
+
+  const bal = getBalance(req.student);
+  if (bal < req.cost) {
+    const s = state.students[req.student];
+    return alert(`${s ? s.name : 'Student'} only has ${bal} tokens but needs ${req.cost}.`);
+  }
+
+  state.redemptionRequests[idx].status = 'approved';
+  state.transactions.push({
+    student: req.student, type: 'redemption',
+    amount: -req.cost, optionId: req.optionId,
+    description: req.description, date: new Date().toISOString()
+  });
+  save();
+  refreshAll();
+  const s = state.students[req.student];
+  alert(`Approved! Deducted ${req.cost} token from ${s ? s.name : 'student'}.`);
+}
+
+function rejectRedemption(idx) {
+  const req = (state.redemptionRequests || [])[idx];
+  if (!req || req.status !== 'pending') return;
+  state.redemptionRequests[idx].status = 'rejected';
+  save();
+  refreshAll();
+}
+
+// NOTIFICATION BADGES
+function updateBadges() {
+  const pendingEC = (state.submissions || []).filter(s => s.status === 'pending').length;
+  const pendingRedeem = (state.redemptionRequests || []).filter(r => r.status === 'pending').length;
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    const existing = tab.querySelector('.tab-badge');
+    if (existing) existing.remove();
+
+    let count = 0;
+    if (tab.dataset.panel === 'extracredit') count = pendingEC;
+    if (tab.dataset.panel === 'redeem') count = pendingRedeem;
+
+    if (count > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'tab-badge';
+      badge.textContent = count;
+      tab.appendChild(badge);
+    }
+  });
+}
+
+// SUBMISSIONS
+function renderSubmissions() {
+  const el = document.getElementById('ec-submissions');
+  if (!el) return;
+  const allSubs = state.submissions || [];
+  const pendingIndexes = [];
+  allSubs.forEach((s, i) => { if (s.status === 'pending') pendingIndexes.push(i); });
+  if (pendingIndexes.length === 0) {
+    el.innerHTML = '<div class="empty-state">No pending submissions.</div>';
+    return;
+  }
+  el.innerHTML = pendingIndexes.map(i => {
+    const sub = allSubs[i];
+    const s = state.students[sub.student];
+    const name = s ? s.name : 'Unknown';
+    return `<div class="log-entry" style="flex-wrap:wrap;gap:0.5rem">
+      <div>
+        <strong>${name}</strong> — ${sub.title}
+        ${sub.notes ? `<br><span style="color:var(--text-light);font-size:0.82rem">${sub.notes}</span>` : ''}
+        <br><span class="log-date">${new Date(sub.date).toLocaleString()}</span>
+      </div>
+      <div>
+        <button class="btn btn-sm btn-green" onclick="approveSubmission(${i})">Approve & Award</button>
+        <button class="btn btn-sm btn-red" onclick="rejectSubmission(${i})">Dismiss</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function approveSubmission(idx) {
+  const sub = (state.submissions || [])[idx];
+  if (!sub || sub.status !== 'pending') return;
+  sub.status = 'approved';
+  const key = sub.student;
+  const earned = getExtraEarned(key);
+  if (earned + TOKENS_PER_SESSION > MAX_EXTRA_TOKENS) {
+    alert(`${state.students[key].name} has reached the extra credit limit (${earned}/${MAX_EXTRA_TOKENS}).`);
+    return;
+  }
+  state.transactions.push({
+    student: key, type: 'extra_credit', amount: TOKENS_PER_SESSION,
+    description: `Extra credit: ${sub.title}`, date: new Date().toISOString()
+  });
+  save();
+  refreshAll();
+  alert(`Approved! +${TOKENS_PER_SESSION} token for ${state.students[key].name}.`);
+}
+
+function rejectSubmission(idx) {
+  const sub = (state.submissions || [])[idx];
+  if (!sub || sub.status !== 'pending') return;
+  sub.status = 'rejected';
+  save();
+  refreshAll();
+}
+
+// ATTENDANCE
+const NO_CLASS_DATES = {
+  '2026-09-07': 'Labor Day',
+  '2026-10-12': 'College Closed',
+  '2026-10-21': 'No Classes',
+  '2026-11-25': 'No Classes',
+};
+const FINALS_START = '2026-12-15';
+
+function getClassDates() {
+  const dates = [];
+  const start = new Date(2026, 7, 28);
+  const end = new Date(2026, 11, 14);
+  const d = new Date(start);
+  while (d <= end) {
+    const day = d.getDay();
+    if (day === 1 || day === 3) {
+      const iso = d.toISOString().slice(0, 10);
+      if (iso < FINALS_START) {
+        dates.push(iso);
+      }
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+}
+
+const CLASS_DATES = getClassDates();
+const ATT_STATUSES = ['P', 'A', 'L', 'E'];
+const ATT_LABELS = { P: 'Present', A: 'Absent', L: 'Late', E: 'Excused' };
+
+function getAttendance() {
+  if (!state.attendance) state.attendance = {};
+  return state.attendance;
+}
+
+function cycleAttendance(studentKey, dateStr) {
+  if (NO_CLASS_DATES[dateStr]) return;
+  const att = getAttendance();
+  if (!att[studentKey]) att[studentKey] = {};
+  const cur = att[studentKey][dateStr] || '';
+  const idx = ATT_STATUSES.indexOf(cur);
+  if (idx === -1) {
+    att[studentKey][dateStr] = 'P';
+  } else if (idx === ATT_STATUSES.length - 1) {
+    delete att[studentKey][dateStr];
+  } else {
+    att[studentKey][dateStr] = ATT_STATUSES[idx + 1];
+  }
+  save();
+  renderAttendance();
+}
+
+function markAllPresent() {
+  const today = new Date().toISOString().slice(0, 10);
+  const dateToMark = CLASS_DATES.includes(today) ? today : CLASS_DATES.find(d => d >= today) || CLASS_DATES[CLASS_DATES.length - 1];
+  if (NO_CLASS_DATES[dateToMark]) return alert('No class on this date.');
+  const att = getAttendance();
+  Object.keys(state.students).forEach(k => {
+    if (!att[k]) att[k] = {};
+    if (!att[k][dateToMark]) att[k][dateToMark] = 'P';
+  });
+  save();
+  renderAttendance();
+  const dateLabel = new Date(dateToMark + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  alert(`Marked all students present for ${dateLabel}. You can click individual cells to change.`);
+}
+
+function renderAttendance() {
+  const keys = Object.keys(state.students);
+  if (keys.length === 0) {
+    document.getElementById('attendance-table').innerHTML = '<div class="empty-state">Add students first.</div>';
+    document.getElementById('attendance-summary').innerHTML = '';
+    return;
+  }
+
+  const monthFilter = document.getElementById('attendanceMonth')?.value || '';
+  let dates = CLASS_DATES;
+  if (monthFilter) {
+    const m = parseInt(monthFilter);
+    dates = dates.filter(d => parseInt(d.split('-')[1]) === m);
+  }
+
+  const att = getAttendance();
+
+  const formatDate = (iso) => {
+    const dt = new Date(iso + 'T12:00:00');
+    const day = dt.toLocaleDateString('en-US', { weekday: 'short' });
+    return `${dt.getMonth()+1}/${dt.getDate()}<br>${day}`;
+  };
+
+  let html = '<table class="att-table"><thead><tr><th class="name-col">Student</th>';
+  dates.forEach(d => {
+    const isHoliday = NO_CLASS_DATES[d];
+    html += `<th${isHoliday ? ' class="att-holiday"' : ''}>${isHoliday ? NO_CLASS_DATES[d] : formatDate(d)}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  keys.forEach(k => {
+    const s = state.students[k];
+    html += `<tr><td class="name-col">${s.name}</td>`;
+    dates.forEach(d => {
+      const isHoliday = NO_CLASS_DATES[d];
+      if (isHoliday) {
+        html += `<td class="att-holiday">—</td>`;
+      } else {
+        const val = att[k]?.[d] || '';
+        const cls = val ? ` att-${val}` : '';
+        html += `<td class="att-cell${cls}" onclick="cycleAttendance('${k}','${d}')">${val}</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('attendance-table').innerHTML = html;
+
+  // Summary
+  let summaryHtml = '<table><thead><tr><th>Student</th><th>Present</th><th>Absent</th><th>Late</th><th>Excused</th><th>Attendance %</th></tr></thead><tbody>';
+  const activeDates = CLASS_DATES.filter(d => !NO_CLASS_DATES[d]);
+  keys.forEach(k => {
+    const s = state.students[k];
+    let counts = { P: 0, A: 0, L: 0, E: 0 };
+    activeDates.forEach(d => {
+      const v = att[k]?.[d];
+      if (v && counts[v] !== undefined) counts[v]++;
+    });
+    const recorded = counts.P + counts.A + counts.L + counts.E;
+    const pct = recorded > 0 ? Math.round(((counts.P + counts.L) / recorded) * 100) : '—';
+    summaryHtml += `<tr>
+      <td><strong>${s.name}</strong></td>
+      <td>${counts.P}</td>
+      <td style="color:${counts.A > 0 ? 'var(--red)' : 'inherit'};font-weight:${counts.A > 0 ? '700' : 'normal'}">${counts.A}</td>
+      <td>${counts.L}</td>
+      <td>${counts.E}</td>
+      <td><strong>${pct}${pct !== '—' ? '%' : ''}</strong></td>
+    </tr>`;
+  });
+  summaryHtml += '</tbody></table>';
+  document.getElementById('attendance-summary').innerHTML = summaryHtml;
+}
+
+// HISTORY
+function renderHistory() {
+  const filterStudent = document.getElementById('historyFilter')?.value || '';
+  const filterType = document.getElementById('historyTypeFilter')?.value || '';
+
+  const hf = document.getElementById('historyFilter');
+  const currentVal = hf.value;
+  hf.innerHTML = '<option value="">All Students</option>' +
+    Object.keys(state.students).map(k => `<option value="${k}">${state.students[k].name}</option>`).join('');
+  hf.value = currentVal;
+
+  let txns = [...state.transactions].reverse();
+  if (filterStudent) txns = txns.filter(t => t.student === filterStudent);
+  if (filterType) txns = txns.filter(t => t.type === filterType);
+
+  if (txns.length === 0) {
+    document.getElementById('history-list').innerHTML = '<div class="empty-state">No transactions found.</div>';
+    return;
+  }
+
+  document.getElementById('history-list').innerHTML = txns.map(t => {
+    const s = state.students[t.student];
+    const name = s ? s.name : 'Removed student';
+    const cls = t.amount < 0 ? 'debit' : 'credit';
+    const sign = t.amount > 0 ? '+' : '';
+    const typeBadge = t.type === 'redemption' ? 'Redemption' : t.type === 'extra_credit' ? 'Extra Credit' : 'Adjustment';
+    return `<div class="log-entry">
+      <div><strong>${name}</strong> — ${t.description}<br>
+        <span class="log-date">${typeBadge} &bull; ${new Date(t.date).toLocaleString()}</span>
+      </div>
+      <div class="log-cost ${cls}">${sign}${t.amount}</div>
+    </div>`;
+  }).join('');
+}
+
+// EXPORT/IMPORT
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `token-tracker-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (imported.students && imported.transactions) {
+        if (confirm('This will replace all current data. Continue?')) {
+          state = imported;
+          save();
+          refreshAll();
+          alert('Data imported successfully.');
+        }
+      } else {
+        alert('Invalid file format.');
+      }
+    } catch { alert('Error reading file.'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// Init
+refreshAll();
+</script>
+</body>
+</html>
